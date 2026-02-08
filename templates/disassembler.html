@@ -1,20 +1,82 @@
 <!doctype html>
-<html>
-<head><title>Disassembler</title></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Disassembler</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f7f7f9;
+      margin: 0;
+      padding: 1.5rem;
+      color: #111;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { margin-bottom: 0.5rem; }
+    p { color: #333; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    input[type=file] {
+      margin-top: 0.75rem;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+    button {
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      border: none;
+      background: #1f6feb;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .note {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 0.5rem;
+    }
+    a { color: #1f6feb; text-decoration: none; }
+  </style>
+</head>
 <body>
-<h1>Disassembler</h1>
-<p>Add a new fragment (append-only).</p>
+  <div class="container">
+    <h1>Disassemble (Intake)</h1>
+    <p>
+      Upload documents to break them into preservable fragments.
+      Ingestion is <strong>append-only</strong> and non-semantic.
+    </p>
 
-<form method="post">
-  <label>Content</label><br/>
-  <textarea name="content" rows="6" cols="80" required></textarea><br/><br/>
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        <label><strong>Select files</strong></label><br/>
+        <input
+          type="file"
+          name="files"
+          multiple
+          accept=".pdf,.docx,.txt,.csv,.md,.zip"
+        />
 
-  <label>Source (optional)</label><br/>
-  <input type="text" name="source" size="80" /><br/><br/>
+        <div class="note">
+          • You may upload up to <strong>5 files</strong> at once<br/>
+          • Or upload a single <strong>.zip</strong> containing text, PDF, or DOCX files<br/>
+          • Nothing is saved unless ingestion succeeds
+        </div>
 
-  <button type="submit">Ingest fragment</button>
-</form>
+        <br/>
+        <button type="submit">Ingest files</button>
+      </form>
+    </div>
 
-<p><a href="/fragments">View fragments</a> | <a href="/">Back to home</a></p>
+    <p style="margin-top: 1.5rem;">
+      <a href="/fragments">View fragments</a> ·
+      <a href="/">Back to home</a>
+    </p>
+  </div>
 </body>
 </html>
