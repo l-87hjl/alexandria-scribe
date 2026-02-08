@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archive Ready</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f7f7f9; margin:0; padding:1.5rem; }
+    .container { max-width:720px; margin:0 auto; }
+    h1 { margin-bottom:0.5rem; }
+    .card { background:#fff; padding:1.25rem; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .stat { font-size:1.1rem; margin:0.5rem 0; }
+    .actions { margin-top:1.25rem; }
+    .primary { display:inline-block; padding:0.8rem 1.3rem; background:#1f6feb; color:#fff; text-decoration:none; border-radius:10px; font-weight:600; }
+    .secondary { margin-left:1rem; color:#1f6feb; text-decoration:none; }
+    .note { font-size:0.85rem; color:#555; margin-top:1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✅ Your archive is ready</h1>
+    <p>The ingestion process has completed successfully.</p>
+
+    <div class="card">
+      <div class="stat"><strong>Fragments created:</strong> {{ fragment_count }}</div>
+      <div class="stat"><strong>Files ingested:</strong> {{ file_count }}</div>
+
+      <div class="actions">
+        <a class="primary" href="/export/all">⬇ Download full archive (ZIP)</a>
+        <a class="secondary" href="/fragments">View fragments</a>
+      </div>
+
+      <div class="note">
+        Nothing is modified after ingestion. All exports are read‑only representations of the archive.
+      </div>
+    </div>
+
+    <p style="margin-top:2rem;"><a href="/">Back to home</a></p>
+  </div>
+</body>
+</html>
