@@ -13,6 +13,7 @@ Design constraints:
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 DB_PATH = Path("data/fragments.db")
 
@@ -62,6 +63,29 @@ def list_fragments(limit: int = 100):
         cur = conn.execute(
             "SELECT id, content, created_at, source FROM fragments ORDER BY id DESC LIMIT ?",
             (limit,),
+        )
+        return cur.fetchall()
+    finally:
+        conn.close()
+
+
+def search_fragments(query: str, limit: int = 100) -> List[sqlite3.Row]:
+    """
+    Read-only substring search over fragment content.
+    No semantics, no ranking beyond recency.
+    """
+    q = f"%{query}%"
+    conn = get_connection()
+    try:
+        cur = conn.execute(
+            """
+            SELECT id, content, created_at, source
+            FROM fragments
+            WHERE content LIKE ?
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (q, limit),
         )
         return cur.fetchall()
     finally:
