@@ -3,10 +3,12 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request, g, redirect, url_for
+from io import BytesIO
+from flask import Flask, render_template, jsonify, request, g, redirect, url_for, send_file
 
 from storage import init_db, add_fragment, list_fragments, search_fragments
 from similarity import compute_similarity
+from recombulator import fetch_fragments_by_ids, assemble_markdown, assemble_text
 
 # ----------------------------
 # Logging Configuration
@@ -123,8 +125,41 @@ def fragments():
         page=page,
     )
 
-@app.route("/recombulator")
+# ----- Recombulator: POST export-only -----
+@app.route("/recombulator", methods=["GET", "POST"])
 def recombulator():
+    if request.method == "POST":
+        ids_raw = request.form.get("fragment_ids", "")
+        fmt = request.form.get("format", "md")
+
+        try:
+            ids = [int(x) for x in ids_raw.split(",") if x.strip().isdigit()]
+        except ValueError:
+            ids = []
+
+        fragments = fetch_fragments_by_ids(ids)
+
+        if not fragments:
+            return jsonify({"error": "no_fragments_selected"}), 400
+
+        if fmt == "txt":
+            content = assemble_text(fragments)
+            filename = "recombined_fragments.txt"
+            mimetype = "text/plain"
+        else:
+            content = assemble_markdown(fragments)
+            filename = "recombined_fragments.md"
+            mimetype = "text/markdown"
+
+        logger.info("recombulator_export ids=%s format=%s", ids, fmt)
+
+        return send_file(
+            BytesIO(content.encode("utf-8")),
+            as_attachment=True,
+            download_name=filename,
+            mimetype=mimetype,
+        )
+
     return render_template("recombulator.html")
 
 # ----------------------------
