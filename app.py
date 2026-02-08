@@ -1,10 +1,9 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template
 
 app = Flask(__name__, template_folder="templates")
 
 @app.route("/")
 def landing():
-    # Reuse the same landing content conceptually; backend landing
     return render_template("landing.html")
 
 @app.route("/disassembler")
@@ -20,4 +19,4 @@ def recombulator():
     return render_template("recombulator.html")
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000)
