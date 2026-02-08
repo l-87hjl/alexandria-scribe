@@ -3,7 +3,22 @@
 <head><title>Fragments</title></head>
 <body>
 <h1>Fragment Browser</h1>
-<p>Design preview. Browse and explore preserved fragments.</p>
-<p><a href="/">Back to home</a></p>
+
+{% if fragments %}
+  <ul>
+  {% for f in fragments %}
+    <li>
+      <strong>#{{ f.id }}</strong> — {{ f.created_at }}<br/>
+      <pre>{{ f.content }}</pre>
+      {% if f.source %}<em>Source: {{ f.source }}</em>{% endif %}
+    </li>
+    <hr/>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p>No fragments yet.</p>
+{% endif %}
+
+<p><a href="/disassembler">Add fragment</a> | <a href="/">Back to home</a></p>
 </body>
 </html>
