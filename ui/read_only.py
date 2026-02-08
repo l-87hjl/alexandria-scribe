@@ -1,15 +1,10 @@
 """
 Read-Only UI for Fragment Exploration
 
-Exposes:
-- Fragment browser
-- Read-only search (no concepts, no labels)
-- Optional similarity view from Stage 1 outputs
-
-Hard constraints:
-- No mutation of fragments
-- No concept naming
-- No ontology exposure
+UPDATED:
+- Pagination
+- Similarity threshold filtering
+- Still strictly read-only
 """
 
 import sqlite3
@@ -18,6 +13,7 @@ from flask import Flask, request, render_template_string
 
 DB_PATH = "fragments.db"
 STAGE1_LOG = "logs/concept_stage1.json"
+PAGE_SIZE = 10
 
 app = Flask(__name__)
 
@@ -27,7 +23,8 @@ TEMPLATE = """
 <h1>Fragment Browser</h1>
 <form method="get">
   <input type="text" name="q" placeholder="search fragments" value="{{ query }}" />
-  <input type="submit" value="Search" />
+  <input type="number" step="0.01" name="sim" placeholder="similarity ≥" value="{{ sim }}" />
+  <input type="submit" value="Apply" />
 </form>
 <hr/>
 {% for f in fragments %}
@@ -35,7 +32,7 @@ TEMPLATE = """
     <strong>Fragment {{ f['id'] }}</strong><br/>
     <pre>{{ f['content'] }}</pre>
     {% if f['related'] %}
-      <em>Related fragments (similarity only):</em>
+      <em>Related fragments:</em>
       <ul>
         {% for r in f['related'] %}
           <li>Fragment {{ r }}</li>
@@ -44,25 +41,39 @@ TEMPLATE = """
     {% endif %}
   </div>
 {% endfor %}
+<div>
+{% if page > 1 %}<a href="?page={{ page - 1 }}">Prev</a>{% endif %}
+Page {{ page }}
+{% if has_more %}<a href="?page={{ page + 1 }}">Next</a>{% endif %}
+</div>
 """
 
 
-def load_fragments(query=None):
+def load_fragments(query=None, page=1):
+    offset = (page - 1) * PAGE_SIZE
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
     if query:
-        cur.execute("SELECT id, content FROM fragments WHERE content LIKE ?", (f"%{query}%",))
+        cur.execute(
+            "SELECT id, content FROM fragments WHERE content LIKE ? LIMIT ? OFFSET ?",
+            (f"%{query}%", PAGE_SIZE + 1, offset),
+        )
     else:
-        cur.execute("SELECT id, content FROM fragments")
+        cur.execute(
+            "SELECT id, content FROM fragments LIMIT ? OFFSET ?",
+            (PAGE_SIZE + 1, offset),
+        )
 
     rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+
+    has_more = len(rows) > PAGE_SIZE
+    return [dict(r) for r in rows[:PAGE_SIZE]], has_more
 
 
-def load_similarity():
+def load_similarity(min_sim=None):
     try:
         with open(STAGE1_LOG) as f:
             data = json.load(f)
@@ -72,6 +83,8 @@ def load_similarity():
 
     related = {}
     for s in signals:
+        if min_sim is not None and s.get("similarity", 0) < min_sim:
+            continue
         related.setdefault(s["a"], []).append(s["b"])
         related.setdefault(s["b"], []).append(s["a"])
     return related
@@ -80,13 +93,24 @@ def load_similarity():
 @app.route("/fragments")
 def fragments_view():
     query = request.args.get("q")
-    fragments = load_fragments(query)
-    related_map = load_similarity()
+    page = int(request.args.get("page", 1))
+    sim = request.args.get("sim")
+    min_sim = float(sim) if sim else None
+
+    fragments, has_more = load_fragments(query, page)
+    related_map = load_similarity(min_sim)
 
     for f in fragments:
         f["related"] = related_map.get(f["id"], [])
 
-    return render_template_string(TEMPLATE, fragments=fragments, query=query or "")
+    return render_template_string(
+        TEMPLATE,
+        fragments=fragments,
+        query=query or "",
+        page=page,
+        has_more=has_more,
+        sim=sim or "",
+    )
 
 
 if __name__ == "__main__":
