@@ -28,6 +28,9 @@ app = Flask(__name__, template_folder="templates")
 init_db()
 logger.info("fragment_store_initialized")
 
+# Pagination defaults
+PAGE_SIZE = 25
+
 @app.before_request
 def log_request_start():
     g.start_time = time.perf_counter()
@@ -101,11 +104,13 @@ def disassembler():
 @app.route("/fragments", methods=["GET"])
 def fragments():
     query = request.args.get("q", "").strip()
+    page = max(int(request.args.get("page", 1)), 1)
+    offset = (page - 1) * PAGE_SIZE
 
     if query:
-        rows = search_fragments(query=query, limit=100)
+        rows = search_fragments(query=query, limit=PAGE_SIZE, offset=offset)
     else:
-        rows = list_fragments(limit=100)
+        rows = list_fragments(limit=PAGE_SIZE, offset=offset)
 
     fragment_pairs = [(row["id"], row["content"]) for row in rows]
     similarity = compute_similarity(fragment_pairs)
@@ -115,6 +120,7 @@ def fragments():
         fragments=rows,
         similarity=similarity,
         query=query,
+        page=page,
     )
 
 @app.route("/recombulator")
