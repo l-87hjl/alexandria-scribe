@@ -41,23 +41,118 @@ def log_request_end(response):
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    # Let Flask handle HTTP errors (404, etc.) normally
     if isinstance(e, HTTPException):
         return e
-
     tb = traceback.format_exc()
     logger.error("unhandled_exception %s\n%s", repr(e), tb)
     return jsonify({"error": "internal_server_error"}), 500
 
+# ---------------- Landing ----------------
 @app.route("/")
 def landing():
     return render_template("landing.html")
 
+# ---------------- Disassembler ----------------
+@app.route("/disassembler", methods=["GET", "POST"])
+def disassembler():
+    if request.method == "POST":
+        files = request.files.getlist("files")
+        ingested = 0
+        skipped = 0
+
+        for f in files:
+            if not f or not f.filename:
+                continue
+            filename = secure_filename(f.filename)
+            ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+            if ext == PDF_EXT:
+                raw = f.read()
+                for frag in extract_pdf_fragments(raw, filename):
+                    add_fragment(
+                        content=frag["content"],
+                        source=filename,
+                        source_type="pdf",
+                        source_page=frag.get("source_page"),
+                    )
+                    ingested += 1
+                continue
+
+            if ext == DOCX_EXT:
+                raw = f.read()
+                for frag in extract_docx_fragments(raw, filename):
+                    add_fragment(
+                        content=frag["content"],
+                        source=filename,
+                        source_type="docx",
+                    )
+                    ingested += 1
+                continue
+
+            if ext in ALLOWED_TEXT_EXTS:
+                raw = f.read()
+                add_fragment(
+                    content=raw.decode("utf-8", errors="ignore"),
+                    source=filename,
+                    source_type="text",
+                )
+                ingested += 1
+            else:
+                skipped += 1
+
+        logger.info("ingestion_complete ingested=%s skipped=%s", ingested, skipped)
+        return redirect(url_for("fragments"))
+
+    return render_template("disassembler.html")
+
+# ---------------- Fragment Browser ----------------
+@app.route("/fragments", methods=["GET"])
+def fragments():
+    query = request.args.get("q", "").strip()
+    page = max(int(request.args.get("page", 1)), 1)
+    offset = (page - 1) * PAGE_SIZE
+
+    if query:
+        rows = search_fragments(query=query, limit=PAGE_SIZE, offset=offset)
+    else:
+        rows = list_fragments(limit=PAGE_SIZE, offset=offset)
+
+    return render_template(
+        "fragments.html",
+        fragments=rows,
+        query=query,
+        page=page,
+    )
+
+# ---------------- Recombulator ----------------
+@app.route("/recombulator", methods=["GET", "POST"])
+def recombulator():
+    if request.method == "POST":
+        ids = [int(x) for x in request.form.getlist("fragment_ids") if x.isdigit()]
+        fmt = request.form.get("format", "zip")
+        fragments = fetch_fragments_by_ids(ids)
+
+        if fmt == "zip":
+            return send_file(
+                assemble_zip(fragments),
+                as_attachment=True,
+                download_name="recombined_fragments.zip",
+                mimetype="application/zip",
+            )
+
+        content = assemble_text(fragments) if fmt == "txt" else assemble_markdown(fragments)
+        return send_file(
+            BytesIO(content.encode("utf-8")),
+            as_attachment=True,
+            download_name=f"recombined_fragments.{fmt}",
+        )
+
+    return render_template("recombulator.html")
+
+# ---------------- Health ----------------
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "timestamp": datetime.utcnow().isoformat()})
-
-# --- existing disassembler / fragments / recombulator routes remain unchanged below ---
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
