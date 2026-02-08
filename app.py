@@ -4,6 +4,9 @@ import time
 import traceback
 from datetime import datetime
 from io import BytesIO
+import zipfile
+import tempfile
+import os
 from flask import Flask, render_template, jsonify, request, g, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 
@@ -34,8 +37,13 @@ logger.info("fragment_store_initialized")
 # Pagination defaults
 PAGE_SIZE = 25
 
-# Allowed plain-text ingestion types (Option 1 scope)
+# Allowed ingestion types (Stage 1: text only)
 ALLOWED_TEXT_EXTS = {".txt", ".md", ".csv"}
+ZIP_EXT = ".zip"
+
+# Safety limits
+MAX_ZIP_FILES = 500
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB per file
 
 @app.before_request
 def log_request_start():
@@ -88,6 +96,22 @@ def handle_exception(e):
     return jsonify(response), 500
 
 # ----------------------------
+# Helper: process a single text file
+# ----------------------------
+
+def ingest_text_file(raw_bytes: bytes, filename: str):
+    try:
+        text = raw_bytes.decode("utf-8", errors="ignore").strip()
+    except Exception:
+        return False
+
+    if not text:
+        return False
+
+    add_fragment(content=text, source=filename)
+    return True
+
+# ----------------------------
 # Routes
 # ----------------------------
 @app.route("/")
@@ -108,24 +132,51 @@ def disassembler():
             filename = secure_filename(f.filename)
             ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
+            # ----- ZIP ingestion -----
+            if ext == ZIP_EXT:
+                try:
+                    with zipfile.ZipFile(f) as zf:
+                        names = zf.namelist()[:MAX_ZIP_FILES]
+                        for name in names:
+                            if name.endswith("/"):
+                                continue
+
+                            inner_name = secure_filename(os.path.basename(name))
+                            inner_ext = "." + inner_name.split(".")[-1].lower() if "." in inner_name else ""
+
+                            if inner_ext not in ALLOWED_TEXT_EXTS:
+                                skipped += 1
+                                continue
+
+                            info = zf.getinfo(name)
+                            if info.file_size > MAX_FILE_SIZE_BYTES:
+                                skipped += 1
+                                continue
+
+                            raw = zf.read(name)
+                            if ingest_text_file(raw, f"{filename}:{inner_name}"):
+                                ingested += 1
+                            else:
+                                skipped += 1
+                except zipfile.BadZipFile:
+                    logger.info("ingest_skip bad_zip filename=%s", filename)
+                    skipped += 1
+                continue
+
+            # ----- Plain text ingestion -----
             if ext not in ALLOWED_TEXT_EXTS:
-                logger.info("ingest_skip unsupported_ext=%s filename=%s", ext, filename)
                 skipped += 1
                 continue
 
-            try:
-                text = f.read().decode("utf-8", errors="ignore").strip()
-            except Exception:
-                logger.info("ingest_skip decode_error filename=%s", filename)
+            raw = f.read(MAX_FILE_SIZE_BYTES + 1)
+            if len(raw) > MAX_FILE_SIZE_BYTES:
                 skipped += 1
                 continue
 
-            if not text:
+            if ingest_text_file(raw, filename):
+                ingested += 1
+            else:
                 skipped += 1
-                continue
-
-            add_fragment(content=text, source=filename)
-            ingested += 1
 
         logger.info("ingestion_complete ingested=%s skipped=%s", ingested, skipped)
         return redirect(url_for("fragments"))
