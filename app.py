@@ -8,7 +8,7 @@ from flask import Flask, render_template, jsonify, request, g, redirect, url_for
 
 from storage import init_db, add_fragment, list_fragments, search_fragments
 from similarity import compute_similarity
-from recombulator import fetch_fragments_by_ids, assemble_markdown, assemble_text
+from recombulator import fetch_fragments_by_ids, assemble_markdown, assemble_text, assemble_zip
 
 # ----------------------------
 # Logging Configuration
@@ -129,11 +129,11 @@ def fragments():
 @app.route("/recombulator", methods=["GET", "POST"])
 def recombulator():
     if request.method == "POST":
-        ids_raw = request.form.get("fragment_ids", "")
+        ids = request.form.getlist("fragment_ids")
         fmt = request.form.get("format", "md")
 
         try:
-            ids = [int(x) for x in ids_raw.split(",") if x.strip().isdigit()]
+            ids = [int(x) for x in ids]
         except ValueError:
             ids = []
 
@@ -141,6 +141,16 @@ def recombulator():
 
         if not fragments:
             return jsonify({"error": "no_fragments_selected"}), 400
+
+        if fmt == "zip":
+            buf = assemble_zip(fragments)
+            logger.info("recombulator_export ids=%s format=zip", ids)
+            return send_file(
+                buf,
+                as_attachment=True,
+                download_name="recombined_fragments.zip",
+                mimetype="application/zip",
+            )
 
         if fmt == "txt":
             content = assemble_text(fragments)
