@@ -103,6 +103,7 @@ Currently available:
 Still missing:
 
 - Read-only fragment browser UI
+- **Read-only fragment search (no concepts, no labels)**
 - Concept placeholder views (even empty)
 
 ---
