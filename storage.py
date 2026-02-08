@@ -44,7 +44,6 @@ def init_db():
 
 
 def add_fragment(content: str, source: str | None = None) -> int:
-    """Insert a new fragment. Returns fragment ID."""
     conn = get_connection()
     try:
         cur = conn.execute(
@@ -57,23 +56,24 @@ def add_fragment(content: str, source: str | None = None) -> int:
         conn.close()
 
 
-def list_fragments(limit: int = 100):
+def list_fragments(limit: int = 25, offset: int = 0):
     conn = get_connection()
     try:
         cur = conn.execute(
-            "SELECT id, content, created_at, source FROM fragments ORDER BY id DESC LIMIT ?",
-            (limit,),
+            """
+            SELECT id, content, created_at, source
+            FROM fragments
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset),
         )
         return cur.fetchall()
     finally:
         conn.close()
 
 
-def search_fragments(query: str, limit: int = 100) -> List[sqlite3.Row]:
-    """
-    Read-only substring search over fragment content.
-    No semantics, no ranking beyond recency.
-    """
+def search_fragments(query: str, limit: int = 25, offset: int = 0) -> List[sqlite3.Row]:
     q = f"%{query}%"
     conn = get_connection()
     try:
@@ -83,9 +83,9 @@ def search_fragments(query: str, limit: int = 100) -> List[sqlite3.Row]:
             FROM fragments
             WHERE content LIKE ?
             ORDER BY id DESC
-            LIMIT ?
+            LIMIT ? OFFSET ?
             """,
-            (q, limit),
+            (q, limit, offset),
         )
         return cur.fetchall()
     finally:
