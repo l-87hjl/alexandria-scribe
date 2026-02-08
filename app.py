@@ -5,7 +5,8 @@ import traceback
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, g, redirect, url_for
 
-from storage import init_db, add_fragment, list_fragments
+from storage import init_db, add_fragment, list_fragments, search_fragments
+from similarity import compute_similarity
 
 # ----------------------------
 # Logging Configuration
@@ -84,7 +85,6 @@ def handle_exception(e):
 def landing():
     return render_template("landing.html")
 
-# ----- Disassembler: POST → add_fragment -----
 @app.route("/disassembler", methods=["GET", "POST"])
 def disassembler():
     if request.method == "POST":
@@ -98,11 +98,24 @@ def disassembler():
 
     return render_template("disassembler.html")
 
-# ----- Fragments: GET → list_fragments -----
 @app.route("/fragments", methods=["GET"])
 def fragments():
-    rows = list_fragments(limit=100)
-    return render_template("fragments.html", fragments=rows)
+    query = request.args.get("q", "").strip()
+
+    if query:
+        rows = search_fragments(query=query, limit=100)
+    else:
+        rows = list_fragments(limit=100)
+
+    fragment_pairs = [(row["id"], row["content"]) for row in rows]
+    similarity = compute_similarity(fragment_pairs)
+
+    return render_template(
+        "fragments.html",
+        fragments=rows,
+        similarity=similarity,
+        query=query,
+    )
 
 @app.route("/recombulator")
 def recombulator():
