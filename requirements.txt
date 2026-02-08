@@ -1,2 +1,3 @@
-flask
+Flask
 scikit-learn
+PyPDF2
