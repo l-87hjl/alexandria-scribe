@@ -1,32 +1,15 @@
 """
 Stage 1 Concept Emergence — Similarity Signals Only
 
-This module implements the *first executable step* toward concept emergence.
-
-Constraints (ENFORCED BY DESIGN):
-- No named concepts
-- No hierarchies
-- No labels exposed to UI
-- Read-only with respect to fragments
-
-Outputs:
-- Embeddings stored separately
-- Similarity signals (pairwise / graph-ready)
-- Logged only; no mutation of fragment content
+UPDATED:
+- Uses real offline deterministic embeddings
+- Still no concepts, labels, or hierarchies
 """
 
 import sqlite3
 import json
 from typing import List, Tuple
-
-# Placeholder embedding function — replace with offline model later
-
-def embed(text: str) -> List[float]:
-    """Deterministic placeholder embedding.
-    Replace with offline embedding model when ready.
-    """
-    return [float(len(text))]
-
+from concept_emergence.embeddings_offline import embed
 
 DB_PATH = "fragments.db"
 
@@ -42,45 +25,43 @@ def load_fragments() -> List[Tuple[int, str]]:
 
 def generate_embeddings():
     fragments = load_fragments()
-    embeddings = []
-
-    for fragment_id, content in fragments:
-        vector = embed(content)
-        embeddings.append({
-            "fragment_id": fragment_id,
-            "embedding": vector,
-        })
-
-    return embeddings
+    return [
+        {"fragment_id": fid, "embedding": embed(content)}
+        for fid, content in fragments
+    ]
 
 
-def compute_similarity(a: List[float], b: List[float]) -> float:
-    # Minimal similarity heuristic (placeholder)
-    return 1.0 / (1.0 + abs(a[0] - b[0]))
+def cosine_similarity(a: List[float], b: List[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    return dot / (na * nb) if na and nb else 0.0
 
 
-def generate_similarity_signals(embeddings):
+def generate_similarity_signals(embeddings, threshold=0.75):
     signals = []
     for i in range(len(embeddings)):
         for j in range(i + 1, len(embeddings)):
-            sim = compute_similarity(
+            sim = cosine_similarity(
                 embeddings[i]["embedding"], embeddings[j]["embedding"]
             )
-            signals.append({
-                "a": embeddings[i]["fragment_id"],
-                "b": embeddings[j]["fragment_id"],
-                "similarity": sim,
-            })
+            if sim >= threshold:
+                signals.append({
+                    "a": embeddings[i]["fragment_id"],
+                    "b": embeddings[j]["fragment_id"],
+                    "similarity": round(sim, 4),
+                })
     return signals
 
 
-def run_stage1(output_path="logs/concept_stage1.json"):
+def run_stage1(output_path="logs/concept_stage1.json", threshold=0.75):
     embeddings = generate_embeddings()
-    signals = generate_similarity_signals(embeddings)
+    signals = generate_similarity_signals(embeddings, threshold)
 
     output = {
         "stage": 1,
-        "embeddings": embeddings,
+        "embedding_model": "offline_hash_v1",
+        "threshold": threshold,
         "signals": signals,
         "constraints": {
             "named_concepts": False,
