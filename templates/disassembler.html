@@ -41,6 +41,24 @@
       color: #555;
       margin-top: 0.5rem;
     }
+    .status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #222;
+      display: none;
+    }
+    .spinner {
+      margin-top: 0.5rem;
+      width: 18px;
+      height: 18px;
+      border: 3px solid #ccc;
+      border-top-color: #1f6feb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     a { color: #1f6feb; text-decoration: none; }
   </style>
 </head>
@@ -53,11 +71,12 @@
     </p>
 
     <div class="card">
-      <form method="post" enctype="multipart/form-data">
+      <form id="uploadForm" method="post" enctype="multipart/form-data">
         <label><strong>Select files</strong></label><br/>
         <input
           type="file"
           name="files"
+          id="fileInput"
           multiple
           accept=".pdf,.docx,.txt,.csv,.md,.zip"
         />
@@ -65,11 +84,17 @@
         <div class="note">
           • You may upload up to <strong>5 files</strong> at once<br/>
           • Or upload a single <strong>.zip</strong> containing text, PDF, or DOCX files<br/>
-          • Nothing is saved unless ingestion succeeds
+          • Large PDFs may take longer to process
         </div>
 
         <br/>
         <button type="submit">Ingest files</button>
+
+        <div class="status" id="statusBox">
+          <div><strong>Status:</strong> Upload received. Analyzing files…</div>
+          <div class="spinner"></div>
+          <div id="timer">Elapsed: 0s</div>
+        </div>
       </form>
     </div>
 
@@ -78,5 +103,22 @@
       <a href="/">Back to home</a>
     </p>
   </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const statusBox = document.getElementById('statusBox');
+    const timerEl = document.getElementById('timer');
+    let startTime = null;
+    let timer = null;
+
+    form.addEventListener('submit', () => {
+      statusBox.style.display = 'block';
+      startTime = Date.now();
+      timer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        timerEl.textContent = `Elapsed: ${elapsed}s`;
+      }, 1000);
+    });
+  </script>
 </body>
 </html>
