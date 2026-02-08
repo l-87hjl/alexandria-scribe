@@ -1,7 +1,8 @@
 import logging
 import sys
+import time
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, g
 
 # ----------------------------
 # Logging Configuration
@@ -20,7 +21,8 @@ logger = logging.getLogger("alexandria_scribe")
 app = Flask(__name__, template_folder="templates")
 
 @app.before_request
-def log_request():
+def log_request_start():
+    g.start_time = time.perf_counter()
     logger.info(
         "request_start path=%s method=%s remote_addr=%s",
         request.path,
@@ -29,11 +31,16 @@ def log_request():
     )
 
 @app.after_request
-def log_response(response):
+def log_request_end(response):
+    duration_ms = None
+    if hasattr(g, "start_time"):
+        duration_ms = (time.perf_counter() - g.start_time) * 1000
+
     logger.info(
-        "request_end path=%s status=%s",
+        "request_end path=%s status=%s duration_ms=%.2f",
         request.path,
         response.status_code,
+        duration_ms if duration_ms is not None else -1,
     )
     return response
 
@@ -61,14 +68,6 @@ def recombulator():
 # ----------------------------
 @app.route("/health")
 def health():
-    """
-    Lightweight health-check endpoint.
-
-    Intended for:
-    - Render health checks
-    - External uptime monitoring
-    - Debugging deployment issues
-    """
     payload = {
         "status": "ok",
         "service": "alexandria-scribe",
