@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+import traceback
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, g
 
@@ -43,6 +44,36 @@ def log_request_end(response):
         duration_ms if duration_ms is not None else -1,
     )
     return response
+
+# ----------------------------
+# Global Error Handling
+# ----------------------------
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """
+    Catch-all exception handler that logs full stack traces.
+    This ensures Render logs always contain actionable error details.
+    """
+    duration_ms = None
+    if hasattr(g, "start_time"):
+        duration_ms = (time.perf_counter() - g.start_time) * 1000
+
+    tb = traceback.format_exc()
+
+    logger.error(
+        "unhandled_exception path=%s method=%s duration_ms=%s error=%s\n%s",
+        request.path,
+        request.method,
+        f"{duration_ms:.2f}" if duration_ms is not None else "-1",
+        repr(e),
+        tb,
+    )
+
+    response = {
+        "error": "internal_server_error",
+        "message": "An unexpected error occurred. Check server logs for details.",
+    }
+    return jsonify(response), 500
 
 # ----------------------------
 # Routes
