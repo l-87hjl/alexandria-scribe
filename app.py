@@ -3,9 +3,9 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request, g
+from flask import Flask, render_template, jsonify, request, g, redirect, url_for
 
-from storage import init_db
+from storage import init_db, add_fragment, list_fragments
 
 # ----------------------------
 # Logging Configuration
@@ -84,13 +84,25 @@ def handle_exception(e):
 def landing():
     return render_template("landing.html")
 
-@app.route("/disassembler")
+# ----- Disassembler: POST → add_fragment -----
+@app.route("/disassembler", methods=["GET", "POST"])
 def disassembler():
+    if request.method == "POST":
+        content = request.form.get("content", "").strip()
+        source = request.form.get("source")
+
+        if content:
+            fragment_id = add_fragment(content=content, source=source)
+            logger.info("fragment_added id=%s", fragment_id)
+            return redirect(url_for("fragments"))
+
     return render_template("disassembler.html")
 
-@app.route("/fragments")
+# ----- Fragments: GET → list_fragments -----
+@app.route("/fragments", methods=["GET"])
 def fragments():
-    return render_template("fragments.html")
+    rows = list_fragments(limit=100)
+    return render_template("fragments.html", fragments=rows)
 
 @app.route("/recombulator")
 def recombulator():
