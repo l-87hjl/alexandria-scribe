@@ -4,6 +4,12 @@
 <body>
 <h1>Fragment Browser</h1>
 
+<form method="get">
+  <input type="text" name="q" value="{{ query }}" placeholder="Search fragments" size="40" />
+  <button type="submit">Search</button>
+  {% if query %}<a href="/fragments">Clear</a>{% endif %}
+</form>
+
 {% if fragments %}
   <ul>
   {% for f in fragments %}
@@ -11,12 +17,23 @@
       <strong>#{{ f.id }}</strong> — {{ f.created_at }}<br/>
       <pre>{{ f.content }}</pre>
       {% if f.source %}<em>Source: {{ f.source }}</em>{% endif %}
+
+      {% if similarity.get(f.id) %}
+        <details>
+          <summary>Related fragments</summary>
+          <ul>
+            {% for other_id, score in similarity.get(f.id) %}
+              <li>#{{ other_id }} (score {{ '%.2f'|format(score) }})</li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
     </li>
     <hr/>
   {% endfor %}
   </ul>
 {% else %}
-  <p>No fragments yet.</p>
+  <p>No fragments found.</p>
 {% endif %}
 
 <p><a href="/disassembler">Add fragment</a> | <a href="/">Back to home</a></p>
