@@ -3,35 +3,37 @@ PDF Ingestion — Stage 1 Safe
 ---------------------------
 
 Rules:
-- Extract raw text only
-- No structure inference
-- No section detection
-- Multiple fragments per page allowed
-- Page numbers preserved as provenance
+- One or more fragments per page
+- No semantic interpretation
+- Conservative text extraction
 """
 
-from typing import List
+from io import BytesIO
 from PyPDF2 import PdfReader
 
 
-def extract_pdf_fragments(pdf_bytes: bytes, filename: str) -> List[dict]:
-    reader = PdfReader(pdf_bytes)
-    fragments = []
+def extract_pdf_fragments(pdf_bytes: bytes, filename: str):
+    """
+    Accept raw PDF bytes, wrap in BytesIO for PyPDF2 compatibility.
+    """
+    stream = BytesIO(pdf_bytes)
+    reader = PdfReader(stream)
 
-    for page_index, page in enumerate(reader.pages, start=1):
+    fragments = []
+    for idx, page in enumerate(reader.pages, start=1):
         try:
             text = page.extract_text() or ""
         except Exception:
+            text = ""
+
+        text = text.strip()
+        if not text:
             continue
 
-        # Conservative splitting: blank lines
-        blocks = [b.strip() for b in text.split("\n\n") if b.strip()]
-
-        for block in blocks:
-            fragments.append({
-                "content": block,
-                "source": filename,
-                "source_page": page_index,
-            })
+        fragments.append({
+            "content": text,
+            "source": filename,
+            "source_page": idx,
+        })
 
     return fragments
