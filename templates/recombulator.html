@@ -1,9 +1,54 @@
 <!doctype html>
 <html>
-<head><title>Recombulator</title></head>
+<head>
+  <title>Recombulator</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; }
+    textarea { width: 100%; }
+    .hint { color: #555; font-size: 0.9em; }
+    .warning { background: #f8f8f8; border-left: 4px solid #999; padding: 1em; margin: 1em 0; }
+  </style>
+</head>
 <body>
+
 <h1>Recombulator</h1>
-<p>Design preview. Assemble fragments and export results.</p>
-<p><a href="/">Back to home</a></p>
+
+<p>
+The Recombulator assembles selected fragments into an <strong>export-only artifact</strong>.
+Nothing created here is saved back into the system.
+</p>
+
+<div class="warning">
+  <strong>Important:</strong><br/>
+  • This workspace does not create memory<br/>
+  • Exports are disposable artifacts<br/>
+  • Fragment storage is never modified
+</div>
+
+<form method="post">
+  <label for="fragment_ids"><strong>Fragment IDs to recombine</strong></label><br/>
+  <textarea name="fragment_ids" rows="3" placeholder="e.g. 12, 18, 21" required></textarea>
+  <div class="hint">Comma-separated fragment IDs, in the order you want them assembled.</div>
+
+  <br/><br/>
+
+  <label for="format"><strong>Export format</strong></label><br/>
+  <select name="format">
+    <option value="md">Markdown (.md)</option>
+    <option value="txt">Plain text (.txt)</option>
+  </select>
+
+  <br/><br/>
+
+  <button type="submit">Generate export</button>
+</form>
+
+<hr/>
+
+<p>
+  <a href="/fragments">Back to fragments</a> |
+  <a href="/">Back to home</a>
+</p>
+
 </body>
 </html>
