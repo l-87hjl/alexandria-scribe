@@ -5,6 +5,8 @@ import traceback
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, g
 
+from storage import init_db
+
 # ----------------------------
 # Logging Configuration
 # ----------------------------
@@ -20,6 +22,10 @@ logger = logging.getLogger("alexandria_scribe")
 # App Setup
 # ----------------------------
 app = Flask(__name__, template_folder="templates")
+
+# Initialize persistent storage on startup
+init_db()
+logger.info("fragment_store_initialized")
 
 @app.before_request
 def log_request_start():
@@ -50,10 +56,6 @@ def log_request_end(response):
 # ----------------------------
 @app.errorhandler(Exception)
 def handle_exception(e):
-    """
-    Catch-all exception handler that logs full stack traces.
-    This ensures Render logs always contain actionable error details.
-    """
     duration_ms = None
     if hasattr(g, "start_time"):
         duration_ms = (time.perf_counter() - g.start_time) * 1000
