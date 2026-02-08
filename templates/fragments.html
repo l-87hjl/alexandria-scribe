@@ -10,10 +10,14 @@
   {% if query %}<a href="/fragments">Clear</a>{% endif %}
 </form>
 
+<form method="post" action="/recombulator">
+  <input type="hidden" name="format" value="zip" />
+
 {% if fragments %}
   <ul>
   {% for f in fragments %}
     <li>
+      <input type="checkbox" name="fragment_ids" value="{{ f.id }}" />
       <strong>#{{ f.id }}</strong> — {{ f.created_at }}<br/>
       <pre>{{ f.content }}</pre>
       {% if f.source %}<em>Source: {{ f.source }}</em>{% endif %}
@@ -35,6 +39,9 @@
 {% else %}
   <p>No fragments found.</p>
 {% endif %}
+
+  <button type="submit">Export selected as ZIP</button>
+</form>
 
 <div>
   {% if page > 1 %}
