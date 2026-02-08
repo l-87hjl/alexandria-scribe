@@ -18,20 +18,12 @@
   {% for f in fragments %}
     <li>
       <input type="checkbox" name="fragment_ids" value="{{ f.id }}" />
-      <strong>#{{ f.id }}</strong> — {{ f.created_at }}<br/>
+      <strong>#{{ f.id }}</strong>
+      {% if f.source %} — <em>{{ f.source }}</em>{% endif %}
+      {% if f.source_page %}(page {{ f.source_page }}){% endif %}
+      {% if f.source_type %}[{{ f.source_type }}]{% endif %}
+      <br/>
       <pre>{{ f.content }}</pre>
-      {% if f.source %}<em>Source: {{ f.source }}</em>{% endif %}
-
-      {% if similarity.get(f.id) %}
-        <details>
-          <summary>Related fragments</summary>
-          <ul>
-            {% for other_id, score in similarity.get(f.id) %}
-              <li>#{{ other_id }} (score {{ '%.2f'|format(score) }})</li>
-            {% endfor %}
-          </ul>
-        </details>
-      {% endif %}
     </li>
     <hr/>
   {% endfor %}
