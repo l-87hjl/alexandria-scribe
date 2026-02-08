@@ -1,19 +1,12 @@
 """
 SQLite Fragment Store
 ---------------------
-Core, append-only persistence layer for fragments.
-
-Design constraints:
-- Append-only (no UPDATE / DELETE for fragments)
-- Immutable fragments
-- Simple schema, no ontology
-- SQLite file lives with the app
+Append-only, Stage 1 safe persistence.
 """
 
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 DB_PATH = Path("data/fragments.db")
 
@@ -22,7 +15,10 @@ CREATE TABLE IF NOT EXISTS fragments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    source TEXT
+    source TEXT,
+    source_type TEXT,
+    source_page INTEGER,
+    ingestion_batch_id TEXT
 );
 """
 
@@ -43,12 +39,28 @@ def init_db():
         conn.close()
 
 
-def add_fragment(content: str, source: str | None = None) -> int:
+def add_fragment(
+    content: str,
+    source: str | None = None,
+    source_type: str | None = None,
+    source_page: int | None = None,
+    ingestion_batch_id: str | None = None,
+) -> int:
     conn = get_connection()
     try:
         cur = conn.execute(
-            "INSERT INTO fragments (content, created_at, source) VALUES (?, ?, ?)",
-            (content, datetime.utcnow().isoformat() + "Z", source),
+            """
+            INSERT INTO fragments (content, created_at, source, source_type, source_page, ingestion_batch_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                content,
+                datetime.utcnow().isoformat() + "Z",
+                source,
+                source_type,
+                source_page,
+                ingestion_batch_id,
+            ),
         )
         conn.commit()
         return cur.lastrowid
@@ -61,8 +73,7 @@ def list_fragments(limit: int = 25, offset: int = 0):
     try:
         cur = conn.execute(
             """
-            SELECT id, content, created_at, source
-            FROM fragments
+            SELECT * FROM fragments
             ORDER BY id DESC
             LIMIT ? OFFSET ?
             """,
@@ -73,14 +84,13 @@ def list_fragments(limit: int = 25, offset: int = 0):
         conn.close()
 
 
-def search_fragments(query: str, limit: int = 25, offset: int = 0) -> List[sqlite3.Row]:
+def search_fragments(query: str, limit: int = 25, offset: int = 0):
     q = f"%{query}%"
     conn = get_connection()
     try:
         cur = conn.execute(
             """
-            SELECT id, content, created_at, source
-            FROM fragments
+            SELECT * FROM fragments
             WHERE content LIKE ?
             ORDER BY id DESC
             LIMIT ? OFFSET ?
