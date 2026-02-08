@@ -1,0 +1,77 @@
+<!--
+Focus Lens — HTML Template Sketch
+
+This is a UI-only sketch showing how the Focus Lens integrates into the existing
+/fragments view. It introduces NO new logic, NO persistence, and NO new data structures.
+
+Variables assumed to already exist in render context:
+- focus_fragment (optional)
+- fragments (list)
+- related_fragments (list)
+- sim (similarity threshold)
+-->
+
+<!doctype html>
+<html>
+<head>
+  <title>Fragments</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: auto; }
+    .fragment { margin-bottom: 2em; }
+    .muted { color: #888; }
+    .related { background: #fafafa; padding: 1em; }
+  </style>
+</head>
+<body>
+
+{% if focus_fragment %}
+
+  <!-- Fragment Detail (Primary) -->
+  <div class="fragment">
+    <h2>Fragment {{ focus_fragment.id }}</h2>
+    <div>{{ focus_fragment.content }}</div>
+  </div>
+
+  <!-- Focus Lens Control (Secondary) -->
+  <div class="fragment">
+    <strong>Focus related fragments</strong><br/>
+    <form method="get">
+      <input type="hidden" name="focus" value="{{ focus_fragment.id }}" />
+      <label class="muted">Similarity sensitivity</label><br/>
+      <input type="range" name="sim" min="0" max="1" step="0.01" value="{{ sim or 0.75 }}" />
+      <br/>
+      <span class="muted">Less</span> &nbsp;&nbsp; <span class="muted">More</span>
+      <br/><br/>
+      <button type="submit">Apply</button>
+      <a href="/fragments">Reset focus</a>
+    </form>
+  </div>
+
+  <!-- Related Fragments (Tertiary) -->
+  {% if related_fragments %}
+  <div class="related">
+    <strong>Related fragments (based on similarity)</strong>
+    <ul>
+      {% for f in related_fragments %}
+        <li>
+          <a href="/fragments?focus={{ f.id }}&sim={{ sim }}">Fragment {{ f.id }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+{% else %}
+
+  <!-- Fragment Index (Unchanged) -->
+  {% for f in fragments %}
+    <div class="fragment">
+      <a href="/fragments?focus={{ f.id }}">Fragment {{ f.id }}</a>
+      <div class="muted">{{ f.content[:120] }}…</div>
+    </div>
+  {% endfor %}
+
+{% endif %}
+
+</body>
+</html>
