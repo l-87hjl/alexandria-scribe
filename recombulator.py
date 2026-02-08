@@ -11,6 +11,8 @@ Guarantees:
 """
 
 from typing import List
+from io import BytesIO
+import zipfile
 from storage import get_connection
 
 
@@ -41,3 +43,18 @@ def assemble_text(fragments) -> str:
     for f in fragments:
         parts.append(f"[Fragment #{f['id']}]\n{f['content']}\n")
     return "\n".join(parts)
+
+
+def assemble_zip(fragments) -> BytesIO:
+    """
+    Create a ZIP archive with one file per fragment.
+    Filenames are stable and ordered.
+    """
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for f in fragments:
+            filename = f"fragment_{f['id']}.md"
+            content = assemble_markdown([f])
+            zf.writestr(filename, content)
+    buf.seek(0)
+    return buf
