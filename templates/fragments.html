@@ -36,6 +36,16 @@
   <p>No fragments found.</p>
 {% endif %}
 
+<div>
+  {% if page > 1 %}
+    <a href="/fragments?page={{ page - 1 }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+  {% endif %}
+  <span>Page {{ page }}</span>
+  {% if fragments|length == 25 %}
+    <a href="/fragments?page={{ page + 1 }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+  {% endif %}
+</div>
+
 <p><a href="/disassembler">Add fragment</a> | <a href="/">Back to home</a></p>
 </body>
 </html>
