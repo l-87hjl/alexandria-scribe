@@ -5,6 +5,7 @@ import traceback
 from datetime import datetime
 from io import BytesIO
 from flask import Flask, render_template, jsonify, request, g, redirect, url_for, send_file
+from werkzeug.utils import secure_filename
 
 from storage import init_db, add_fragment, list_fragments, search_fragments
 from similarity import compute_similarity
@@ -32,6 +33,9 @@ logger.info("fragment_store_initialized")
 
 # Pagination defaults
 PAGE_SIZE = 25
+
+# Allowed plain-text ingestion types (Option 1 scope)
+ALLOWED_TEXT_EXTS = {".txt", ".md", ".csv"}
 
 @app.before_request
 def log_request_start():
@@ -93,13 +97,38 @@ def landing():
 @app.route("/disassembler", methods=["GET", "POST"])
 def disassembler():
     if request.method == "POST":
-        content = request.form.get("content", "").strip()
-        source = request.form.get("source")
+        files = request.files.getlist("files")
+        ingested = 0
+        skipped = 0
 
-        if content:
-            fragment_id = add_fragment(content=content, source=source)
-            logger.info("fragment_added id=%s", fragment_id)
-            return redirect(url_for("fragments"))
+        for f in files:
+            if not f or not f.filename:
+                continue
+
+            filename = secure_filename(f.filename)
+            ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+            if ext not in ALLOWED_TEXT_EXTS:
+                logger.info("ingest_skip unsupported_ext=%s filename=%s", ext, filename)
+                skipped += 1
+                continue
+
+            try:
+                text = f.read().decode("utf-8", errors="ignore").strip()
+            except Exception:
+                logger.info("ingest_skip decode_error filename=%s", filename)
+                skipped += 1
+                continue
+
+            if not text:
+                skipped += 1
+                continue
+
+            add_fragment(content=text, source=filename)
+            ingested += 1
+
+        logger.info("ingestion_complete ingested=%s skipped=%s", ingested, skipped)
+        return redirect(url_for("fragments"))
 
     return render_template("disassembler.html")
 
@@ -125,7 +154,6 @@ def fragments():
         page=page,
     )
 
-# ----- Recombulator: POST export-only -----
 @app.route("/recombulator", methods=["GET", "POST"])
 def recombulator():
     if request.method == "POST":
@@ -172,9 +200,6 @@ def recombulator():
 
     return render_template("recombulator.html")
 
-# ----------------------------
-# Health / Heartbeat
-# ----------------------------
 @app.route("/health")
 def health():
     payload = {
