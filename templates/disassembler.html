@@ -3,7 +3,18 @@
 <head><title>Disassembler</title></head>
 <body>
 <h1>Disassembler</h1>
-<p>Design preview. Upload and decompose documents into fragments.</p>
-<p><a href="/">Back to home</a></p>
+<p>Add a new fragment (append-only).</p>
+
+<form method="post">
+  <label>Content</label><br/>
+  <textarea name="content" rows="6" cols="80" required></textarea><br/><br/>
+
+  <label>Source (optional)</label><br/>
+  <input type="text" name="source" size="80" /><br/><br/>
+
+  <button type="submit">Ingest fragment</button>
+</form>
+
+<p><a href="/fragments">View fragments</a> | <a href="/">Back to home</a></p>
 </body>
 </html>
