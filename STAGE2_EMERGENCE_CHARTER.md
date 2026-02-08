@@ -1,160 +1,163 @@
-# Stage 2 Emergence Charter — Soft Structure Without Meaning
+# Stage 2 Emergence Charter
 
-This document defines **Stage 2 of concept emergence**.
+**Status:** Design-only (no implementation)
 
-It is intentionally **charter-only**: no implementation, no schema, no UI commitments.
-Its purpose is to define *what is allowed*, *what is forbidden*, and *where the new points of no return lie*.
+This document defines the **conditions, permissions, and limits** of *Stage 2 Emergence* in Alexandria-Scribe.
 
-Stage 2 exists to increase **navigability and compression** while preserving the system’s core property:
+Stage 2 exists to allow **soft structure to appear** *without collapsing ambiguity* or prematurely committing to ontology.
 
-> **The system remembers faithfully before it understands.**
-
----
-
-## I. Minimum Architecture for First Implementation (Baseline)
-
-Before Stage 2, the **minimum viable architecture** for a preservation-first system is:
-
-### Required (Must Exist)
-
-1. **Fragment store**
-   - Append-only
-   - Immutable fragments
-
-2. **Provenance model**
-   - Fragment origin preserved
-   - Time-order preserved
-
-3. **Anti-ontology constraints**
-   - No required categories
-   - No schema-level meaning
-
-4. **Stage 1 emergence**
-   - Embeddings
-   - Similarity signals
-   - Logged only
-
-5. **Read-only exploration UI**
-   - Fragment browsing
-   - Optional similarity-based relatedness
-
-If these are present, the system is *architecturally complete at Stage 1*.
-
-Everything beyond this point is **phase-based expansion**, not core definition.
+This charter is normative.
 
 ---
 
-## II. What Stage 2 Is (Allowed Meaning)
+## Purpose of Stage 2
 
-Stage 2 introduces **soft clustering**.
+Stage 1 proved that fragments can exist, interact, and be recombined **without meaning being imposed by the system**.
 
-Soft clustering is defined as:
+Stage 2 explores a narrow, careful expansion:
 
-- A *temporary grouping* of fragments
-- Derived entirely from Stage 1 signals
-- Non-authoritative
-- Discardable without data loss
+> **From resemblance → to provisional grouping**
 
-### Properties of Soft Clusters
-
-Soft clusters:
-
-- Have **no names**
-- Have **no required membership**
-- May overlap freely
-- May dissolve or reform
-- Are computed, not asserted
-
-A cluster answers only one question:
-
-> “These fragments tend to co-occur or resemble one another.”
-
-It does **not** answer:
-- What they *are*
-- What they *mean*
-- What they *should be called*
+But *not* to naming, taxonomy, or authority.
 
 ---
 
-## III. What Stage 2 Is Not (Explicitly Forbidden)
+## Core Principle
 
-Stage 2 must not introduce:
+> **Stage 2 may surface patterns, but must not decide what they are.**
 
-- Named concepts
-- Hierarchical trees
-- Parent/child relationships
-- Stable cluster IDs used as keys
-- UI flows that require choosing a cluster
-
-Clusters must never become:
-
-- Storage primitives
-- Authorization boundaries
-- Required metadata
-
-> If a fragment must belong to a cluster, the line has been crossed.
+Meaning remains:
+- Human-interpreted
+- Reversible
+- Contestable
 
 ---
 
-## IV. New Points of No Return (Stage 2)
+## Preconditions (Must Be True Before Stage 2)
 
-Stage 2 introduces **new dangers** distinct from Stage 1.
+Stage 2 may not begin unless all of the following are satisfied:
 
-The system crosses a new point of no return if:
+1. **Stage 1 is frozen** (see `STAGE1_FROZEN.md`)
+2. **Safety tests are passing**
+3. **No ontology tables exist**
+4. **Fragments are immutable**
+5. **Similarity remains non-persistent by default**
 
-1. **Clusters are given stable names**
-2. **Clusters are stored as authoritative records**
-3. **Clusters become the primary navigation surface**
-4. **Users are required to assign fragments to clusters**
-5. **Deleting all clusters degrades fragment access or ingestion**
-
-These transitions are dangerous because they:
-
-- Shift meaning from emergent to structural
-- Encourage users to optimize for clusters
-- Freeze interpretation prematurely
-
-> **Rule:** Clusters may assist navigation, never define it.
+If any precondition fails, Stage 2 is invalid.
 
 ---
 
-## V. Phase-Based Roadmap (Explicit)
+## What Stage 2 Allows (Strictly Limited)
 
-### Phase 1 — Preservation (Complete)
-- Fragment ingestion
-- Immutability
-- Provenance
+### 1. Soft Clustering (Ephemeral)
 
-### Phase 2 — Signal Emergence (Complete)
-- Embeddings
-- Similarity
+The system may:
+- Group fragments based on similarity signals
+- Present groupings as *views*, not objects
+- Recompute clusters dynamically
 
-### Phase 3 — Soft Structure (Defined Here)
-- Soft clustering
-- Overlapping groups
-- No naming
-
-### Phase 4 — Human Interpretation (Future, Optional)
-- Naming (revisable)
-- Synthesis
-- Export
-
-Only Phases 1–3 are required for a *complete preservation system*.
+Constraints:
+- Clusters are **not stored**
+- Clusters have **no IDs**
+- Clusters cannot be referenced later
 
 ---
 
-## VI. Canonical Safety Test (Stage 2)
+### 2. Provisional Group Labels (Human-Only)
 
-Stage 2 remains safe if and only if the following is true:
+Humans may:
+- Temporarily label a view
+- Use labels as **personal annotations**
 
-> **Deleting all clusters leaves the system fully usable, searchable, and intact.**
-
-If this condition fails, Stage 2 has exceeded its mandate.
+Constraints:
+- Labels are not stored as system concepts
+- Labels are not reused automatically
+- Labels never affect similarity computation
 
 ---
 
-## VII. Final Rule
+### 3. Perspective-Based Exploration
 
-> **Stage 2 may increase structure, but must not increase obligation.**
+Stage 2 may introduce UI metaphors such as:
+- Lenses
+- Focus views
+- Overlays
 
-This charter defines the maximum safe envelope for emergence beyond similarity.
+These metaphors:
+- Reorder perception
+- Do not alter memory
+- Do not create structure
+
+---
+
+## Explicitly Disallowed in Stage 2
+
+The following actions are forbidden and constitute a **point of no return**:
+
+- Persisting clusters
+- Naming concepts as first-class objects
+- Creating concept tables
+- Establishing parent/child relationships
+- Using clusters to affect ingestion
+- Allowing clusters to feed back into similarity
+
+If any of these occur, Stage 2 has failed.
+
+---
+
+## Data Model Constraints
+
+During Stage 2:
+
+- The `fragments` table **must remain unchanged**
+- No new tables representing meaning may be added
+- Any new tables must be:
+  - UI-only
+  - Session-scoped
+  - Explicitly discardable
+
+---
+
+## Tests Required Before Implementation
+
+Before *any* Stage 2 code is written, the following must exist:
+
+- Tests proving clusters are not persisted
+- Tests proving labels do not affect similarity
+- Tests proving fragment immutability still holds
+
+No tests → no Stage 2.
+
+---
+
+## Human Authority Clause
+
+Stage 2 explicitly affirms:
+
+> The system does not know what something *is*.
+
+It may only:
+- Suggest
+- Surface
+- Invite
+
+Interpretation remains human.
+
+---
+
+## Exit Criteria (Transition to Stage 3)
+
+Stage 2 may only advance when:
+
+- Clear rules for naming are defined
+- Governance for concept persistence exists
+- Multiple users validate emergence behavior
+- Reversibility has been demonstrated under scale
+
+---
+
+## Summary
+
+> Stage 2 is a controlled experiment in *noticing without declaring*.
+
+If the system ever feels confident about meaning, Stage 2 has gone too far.
